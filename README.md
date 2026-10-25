@@ -1,6 +1,11 @@
-# calcolapizza-mcp
+# pizza-mcp
 
 Server [MCP](https://modelcontextprotocol.io) per calcolare le dosi dell'impasto della pizza con il metodo diretto. A partire da numero e peso dei panetti, idratazione, farine e programma di lievitazione restituisce i grammi di **ogni farina, acqua, sale e lievito**, con le percentuali del fornaio.
+
+Si può usare in due modi, con lo stesso codice e lo stesso tool:
+
+- **in locale via stdio** (Node.js), per Claude Code, Claude Desktop o qualsiasi client MCP;
+- **su Cloudflare Workers** come endpoint MCP remoto Streamable HTTP, senza server da mantenere.
 
 ## Cosa fa
 
@@ -20,18 +25,18 @@ npm install
 npm run build
 ```
 
-## Configurazione in Claude Code
+## Configurazione in locale (stdio)
 
-Registra il server con il percorso assoluto di `dist/index.js`:
+Registra il server con il percorso assoluto di `dist/index.js` (sostituisci `C:\percorso\pizza-mcp` con la cartella in cui hai clonato il progetto):
 
 ```bash
-claude mcp add calcolapizza -- node "C:\Users\simon\Documents\DEV\calcolapizza-mcp\dist\index.js"
+claude mcp add pizza-mcp -- node "C:\percorso\pizza-mcp\dist\index.js"
 ```
 
 Per renderlo disponibile in tutti i progetti aggiungi `--scope user`:
 
 ```bash
-claude mcp add --scope user calcolapizza -- node "C:\Users\simon\Documents\DEV\calcolapizza-mcp\dist\index.js"
+claude mcp add --scope user pizza-mcp -- node "C:\percorso\pizza-mcp\dist\index.js"
 ```
 
 In alternativa, aggiungi al file `.mcp.json` del progetto:
@@ -39,10 +44,10 @@ In alternativa, aggiungi al file `.mcp.json` del progetto:
 ```json
 {
   "mcpServers": {
-    "calcolapizza": {
+    "pizza-mcp": {
       "command": "node",
       "args": [
-        "C:\\Users\\simon\\Documents\\DEV\\calcolapizza-mcp\\dist\\index.js"
+        "C:\\percorso\\pizza-mcp\\dist\\index.js"
       ]
     }
   }
@@ -52,8 +57,44 @@ In alternativa, aggiungi al file `.mcp.json` del progetto:
 Se il client non avvia il server su Windows, prova la variante con `cmd`:
 
 ```bash
-claude mcp add calcolapizza -- cmd /c node "C:\Users\simon\Documents\DEV\calcolapizza-mcp\dist\index.js"
+claude mcp add pizza-mcp -- cmd /c node "C:\percorso\pizza-mcp\dist\index.js"
 ```
+
+## Deploy su Cloudflare Workers
+
+Il Worker espone un endpoint MCP **Streamable HTTP stateless** su `/mcp`: ogni richiesta crea un server e un trasporto nuovi, quindi non servono Durable Objects né sessioni. Il tool è puro e non conserva stato.
+
+1. Accedi a Cloudflare (una volta sola):
+
+   ```bash
+   npx wrangler login
+   ```
+
+2. Prova il Worker in locale:
+
+   ```bash
+   npm run dev:worker
+   ```
+
+   Il server risponde su `http://localhost:8788` (`/health` per lo stato, `/mcp` per MCP).
+
+3. Pubblica:
+
+   ```bash
+   npm run deploy
+   ```
+
+   Wrangler stampa l'URL pubblico, del tipo `https://pizza-mcp.<sottodominio>.workers.dev`.
+
+4. Collega l'endpoint remoto a Claude Code:
+
+   ```bash
+   claude mcp add --transport http pizza-mcp https://pizza-mcp.<sottodominio>.workers.dev/mcp
+   ```
+
+L'endpoint è pubblico e senza autenticazione: chiunque conosca l'URL può chiamare il tool di calcolo. Se ti serve, puoi aggiungere un controllo su `Authorization` nel `fetch` di `src/worker.ts` o proteggere l'endpoint con Cloudflare Access.
+
+Per cambiare nome del Worker, porta o compatibility date modifica `wrangler.jsonc`.
 
 ## Tool: `calculate_dough`
 
@@ -154,12 +195,16 @@ Conversioni usate:
 ## Sviluppo
 
 ```bash
-npm test        # test unitari del motore di calcolo
-npm run smoke   # test end-to-end del server MCP (richiede npm run build)
-npm run dev     # avvia il server da sorgente con tsx
+npm test          # test unitari del motore di calcolo
+npm run smoke     # test end-to-end del server stdio (richiede npm run build)
+npm run dev       # avvia il server stdio da sorgente con tsx
+npm run dev:worker # avvia il Worker in locale su http://localhost:8788
+npm run smoke:worker # test end-to-end dell'endpoint HTTP (con dev:worker attivo)
+npm run typecheck # controllo dei tipi senza generare file
+npm run deploy    # pubblica su Cloudflare Workers
 ```
 
-La logica di calcolo è in `src/calc.ts`, la formattazione del riepilogo in `src/format.ts` e il server MCP in `src/index.ts`.
+La logica di calcolo è in `src/calc.ts`, la formattazione del riepilogo in `src/format.ts`, la registrazione del tool in `src/server.ts`, l'entry point stdio in `src/index.ts` e l'entry point Cloudflare in `src/worker.ts`.
 
 ## Licenza
 

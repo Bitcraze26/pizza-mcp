@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+.wrangler/
 *.log
 .env
 .DS_Store

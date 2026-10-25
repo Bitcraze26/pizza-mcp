@@ -1,11 +1,11 @@
 {
-  "name": "calcolapizza-mcp",
+  "name": "pizza-mcp",
   "version": "1.0.0",
   "description": "Server MCP per calcolare le dosi dell'impasto della pizza (farine, acqua, sale, lievito)",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "calcolapizza-mcp": "./dist/index.js"
+    "pizza-mcp": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -17,7 +17,11 @@
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke-test.mjs"
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:worker": "node scripts/smoke-worker.mjs",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "keywords": [
     "mcp",
@@ -38,6 +42,7 @@
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.152.0"
   }
 }

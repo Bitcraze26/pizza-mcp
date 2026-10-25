@@ -17,7 +17,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client({
-  name: "calcolapizza-smoke-test",
+  name: "pizza-mcp-smoke-test",
   version: "1.0.0",
 });
 
